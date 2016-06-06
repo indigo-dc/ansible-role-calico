@@ -1,0 +1,5 @@
+---
+# defaults file for calico
+etcd_endpoints: "http://"
+docker_cluster_store: "etcd://"
+calico_binary: "https://github.com/projectcalico/calico-containers/releases/download/v0.19.0/calicoctl"

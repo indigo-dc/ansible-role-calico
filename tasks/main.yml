@@ -1,0 +1,32 @@
+---
+- name: install ipset, iptables
+  apt: name="{{item}}" state=present
+  with_items:
+    - ipset
+    - iptables
+  tags: calico
+
+- name: configure docker 
+  lineinfile:
+    dest: /etc/default/docker
+    state: present
+    insertafter: ^DOCKER_OPTS=.*
+    line: "DOCKER_OPTS=\"$DOCKER_OPTS --cluster-store {{ docker_cluster_store }} \""
+  notify:
+    - restart docker
+  tags: calico
+
+
+- name: download calicoctl binary
+  get_url:
+    url: "{{ calico_binary }}"
+    dest: /usr/bin/calicoctl
+    mode: 0755
+  tags:
+    - calico
+
+- name: start calico node
+  command: calicoctl node --libnetwork
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_endpoints }}"
+  tags: calico 
