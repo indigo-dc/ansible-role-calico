@@ -1,5 +1,26 @@
 ---
 # defaults file for calico
-etcd_endpoints: "http://"
-docker_cluster_store: "etcd://"
+
+# etcd variables
+etcd_url_scheme: http
+etcd_interface: eth0
+etcd_client_interface: "{{ etcd_interface }}"
+
+etcd_endpoints: "
+        {%- if etcd_peers is defined -%}
+            {% for host in etcd_peers %}{{ etcd_peer_url_scheme }}://{{ host }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
+	{%- else -%}
+            {% for host in groups[etcd_peers_group] -%}{{ etcd_url_scheme }}://{{ hostvars[host]['ansible_' + etcd_client_interface]['ipv4']['address'] }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %} 
+	{%- endif -%}
+"
+
+
+docker_cluster_store: "
+        {%- if etcd_peers is defined -%}
+            etcd://{% for host in etcd_peers %}{{ host }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
+        {%- else -%}
+            etcd://{% for host in groups[etcd_peers_group] -%}{{ hostvars[host]['ansible_' + etcd_client_interface]['ipv4']['address'] }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
+        {%- endif -%}
+"
+
 calico_binary: "https://github.com/projectcalico/calico-containers/releases/download/v0.19.0/calicoctl"
