@@ -1,4 +1,4 @@
-Zookeeper Role
+Calico Role
 =========
 
 Configure and start calico node
@@ -7,7 +7,7 @@ This role has been specifically developed to be used for the deployment of calic
 
 Role Variables
 --------------
-
+- `etcd_peers` (optional): list of etcd nodes - alternatively, you can use a proper inventory file specifying the hosts group [etcd_servers]
 
 Dependencies
 ------------
@@ -19,7 +19,7 @@ Example Playbook
 
     - hosts: servers
       roles:
-         - { role: indigo-dc.calico }
+         - { role: indigo-dc.calico, etcd_peers: ["10.10.10.1", "10.10.10.2", "10.10.10.3"] }
 
 License
 -------
