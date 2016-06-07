@@ -1,7 +1,9 @@
 Calico Role
 =========
 
-Configure and start calico node
+Configure and start calico node according to 
+
+https://github.com/projectcalico/calico-containers/blob/master/docs/mesos/UsageGuideDockerContainerizer.md
 
 This role has been specifically developed to be used for the deployment of calico for Mesos in the framework of INDIGO-DataCloud project.
 
