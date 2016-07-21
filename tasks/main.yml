@@ -1,32 +1,72 @@
 ---
-- name: install ipset, iptables
-  apt: name="{{item}}" state=present
+- name: Fail if the OS is not supported
+  fail:
+    msg="This role is not supported on {{ansible_distribution}}"
+  when: "ansible_distribution != 'Ubuntu' and ansible_os_family != 'RedHat'"
+  tags: calico
+
+- name: Install ipset and iptables packages
+  package: name="{{item}}" state=present
   with_items:
     - ipset
     - iptables
   tags: calico
 
-- name: configure docker 
+- name: Configure Docker (Ubuntu)
   lineinfile:
     dest: /etc/default/docker
     state: present
     insertafter: ^DOCKER_OPTS=.*
     line: "DOCKER_OPTS=\"$DOCKER_OPTS --cluster-store {{ docker_cluster_store }} \""
+  when: ansible_distribution == 'Ubuntu'
   notify:
     - restart docker
   tags: calico
 
+- name: Configure Docker (EL)
+  lineinfile:
+    dest: /etc/sysconfig/docker
+    state: present
+    create: yes
+    insertafter: EOF
+    line: "DOCKER_CLUSTER_OPTIONS=\"--cluster-store {{ docker_cluster_store }}\""
+  when: ansible_os_family == 'RedHat'
+  notify:
+    - restart docker
+  tags: calico
 
-- name: download calicoctl binary
+# Restart Docker before going further
+- meta: flush_handlers
+  tags: calico
+
+- name: Download calicoctl
   get_url:
     url: "{{ calico_binary }}"
+    checksum: "{{ calicoctl_checksum }}"
     dest: /usr/bin/calicoctl
     mode: 0755
-  tags:
-    - calico
+  register: calicoctl
+  tags: calico
 
-- name: start calico node
+- name: Verify configuration of calico-node
+  command: docker inspect calico-node
+  register: caliconode
+  ignore_errors: true
+  failed_when: caliconode.rc not in (0, 1)
+  changed_when: "caliconode.rc != 0 or not caliconode.stdout | search('\"Status\": \"running\"') or not caliconode.stdout | search('ETCD_ENDPOINTS='+etcd_endpoints)"
+  tags: calico
+
+- name: Verify configuration of calico-libnetwork
+  command: docker inspect calico-libnetwork
+  register: calicolibnet
+  ignore_errors: true
+  failed_when: calicolibnet.rc not in (0, 1)
+  changed_when: "calicolibnet.rc != 0 or not calicolibnet.stdout | search('\"Status\": \"running\"') or not calicolibnet.stdout | search('ETCD_ENDPOINTS='+etcd_endpoints)"
+  tags: calico
+
+- name: Start Calico Node
   command: calicoctl node --libnetwork
   environment:
     ETCD_ENDPOINTS: "{{ etcd_endpoints }}"
-  tags: calico 
+  when: "{{ calicoctl | changed }} or {{ caliconode | changed }} or {{ calicolibnet | changed }}"
+  tags: calico
