@@ -8,7 +8,7 @@ etcd_client_port: 2379
 
 etcd_endpoints: "
         {%- if etcd_peers is defined -%}
-            {% for host in etcd_peers %}{{ etcd_peer_url_scheme }}://{{ host }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
+            {% for host in etcd_peers %}{{ etcd_url_scheme }}://{{ host }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
         {%- else -%}
             {% for host in groups[etcd_peers_group] -%}{{ etcd_url_scheme }}://{{ hostvars[host]['ansible_default_ipv4']['address'] }}:{{ etcd_client_port }}{% if not loop.last %},{% endif %}{% endfor %}
         {%- endif -%}
