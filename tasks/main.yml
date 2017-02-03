@@ -65,8 +65,10 @@
   tags: calico
 
 - name: Start Calico Node
-  command: calicoctl node --libnetwork
+  #command: calicoctl node --libnetwork
+  command: calicoctl node --libnetwork --ip "{{ calico_ip }}"
   environment:
     ETCD_ENDPOINTS: "{{ etcd_endpoints }}"
+    ETCD_AUTHORITY: "{{ etcd_authority }}"
   when: "{{ calicoctl | changed }} or {{ caliconode | changed }} or {{ calicolibnet | changed }}"
   tags: calico
